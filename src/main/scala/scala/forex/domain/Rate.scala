@@ -14,7 +14,7 @@ case class Rate(
     ask: BigDecimal,
     price: BigDecimal,
     timeStamp: OffsetDateTime,
-  )
+)
 
 object Rate {
   implicit val configuration: Configuration = Configuration.default.withSnakeCaseMemberNames
@@ -23,7 +23,7 @@ object Rate {
   final case class Pair(
       from: Currency,
       to: Currency,
-    ) {
+  ) {
     def toKey = s"${from.entryName}${to.entryName}"
   }
 }

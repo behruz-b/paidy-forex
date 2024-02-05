@@ -9,15 +9,15 @@ case class ApplicationConfig(
     http: HttpConfig,
     oneFrame: OneFrameConfig,
     redis: RedisConfig,
-  )
+)
 
 case class HttpConfig(
     host: String,
     port: Int,
     timeout: FiniteDuration,
-  )
+)
 
 case class OneFrameConfig(
     uri: URI,
     token: String,
-  )
+)
