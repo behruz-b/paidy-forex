@@ -1,8 +1,10 @@
 package scala.forex.domain
-import io.circe.generic.JsonCodec
-import io.circe.generic.extras.{ Configuration, ConfiguredJsonCodec }
 
 import java.time.OffsetDateTime
+
+import io.circe.generic.JsonCodec
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.ConfiguredJsonCodec
 
 @ConfiguredJsonCodec
 case class Rate(
@@ -11,8 +13,8 @@ case class Rate(
     bid: BigDecimal,
     ask: BigDecimal,
     price: BigDecimal,
-    timeStamp: OffsetDateTime
-)
+    timeStamp: OffsetDateTime,
+  )
 
 object Rate {
   implicit val configuration: Configuration = Configuration.default.withSnakeCaseMemberNames
@@ -20,6 +22,8 @@ object Rate {
   @JsonCodec
   final case class Pair(
       from: Currency,
-      to: Currency
-  )
+      to: Currency,
+    ) {
+    def toKey = s"${from.entryName}${to.entryName}"
+  }
 }

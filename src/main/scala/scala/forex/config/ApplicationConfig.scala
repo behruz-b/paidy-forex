@@ -1,20 +1,23 @@
 package scala.forex.config
 
 import java.net.URI
+
 import scala.concurrent.duration.FiniteDuration
+import scala.forex.redis.RedisConfig
 
 case class ApplicationConfig(
     http: HttpConfig,
-    oneFrame: OneFrameConfig
-)
+    oneFrame: OneFrameConfig,
+    redis: RedisConfig,
+  )
 
 case class HttpConfig(
     host: String,
     port: Int,
-    timeout: FiniteDuration
-)
+    timeout: FiniteDuration,
+  )
 
 case class OneFrameConfig(
     uri: URI,
-    token: String
-)
+    token: String,
+  )

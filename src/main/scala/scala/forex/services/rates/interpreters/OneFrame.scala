@@ -1,28 +1,71 @@
 package scala.forex.services.rates.interpreters
 
-import forex.services.rates.Algebra
-import cats.{ MonadThrow, Traverse }
-import cats.syntax.all._
+import java.time.OffsetDateTime
+import java.time.ZoneId
 
-import cats.syntax.either._
-import io.circe
-import io.circe.{ Decoder, Json }
-import sttp.client3.circe.asJson
-import sttp.client3.{ basicRequest, DeserializationException, HttpError, Response, ResponseException, SttpBackend }
-import sttp.model.Uri
-
-import forex.domain.Rate
-import forex.services.rates.Errors._
 import scala.concurrent.duration.DurationInt
 import scala.forex.config.OneFrameConfig
+import scala.forex.redis.RedisClient
 import scala.forex.services.rates.Errors.Error._
 
-class OneFrame[F[_]: MonadThrow](config: OneFrameConfig)(implicit sttpBackend: SttpBackend[F, Any])
-    extends Algebra[F] {
+import cats.MonadThrow
+import cats.Traverse
+import cats.data.EitherT
+import cats.data.OptionT
+import cats.syntax.all._
+import forex.domain.Rate
+import forex.services.rates.Algebra
+import forex.services.rates.Errors._
+import io.circe
+import io.circe.Decoder
+import io.circe.DecodingFailure
+import io.circe.Json
+import io.circe.parser.decode
+import io.circe.syntax.EncoderOps
+import sttp.client3.DeserializationException
+import sttp.client3.HttpError
+import sttp.client3.Response
+import sttp.client3.ResponseException
+import sttp.client3.SttpBackend
+import sttp.client3.basicRequest
+import sttp.client3.circe.asJson
+import sttp.model.Uri
 
+class OneFrame[F[_]: MonadThrow](
+    config: OneFrameConfig
+  )(implicit
+    sttpBackend: SttpBackend[F, Any],
+    redis: RedisClient[F],
+  ) extends Algebra[F] {
+  private val RedisKey = "rates"
+  private val Expiration = 1.day
   override def get(pair: Rate.Pair): F[Error Either Rate] =
+    OptionT(redis.get(RedisKey)).cataF(
+      getAndUpdate(pair)(Map.empty),
+      str =>
+        EitherT
+          .fromEither[F](decode[Map[String, Rate]](str))
+          .leftMap(error => toDecodeError(error.asInstanceOf[DecodingFailure], str.asJson.spaces2))
+          .flatMapF { implicit cache =>
+            cache
+              .get(pair.toKey)
+              .fold(getAndUpdate(pair))(rate =>
+                if (rate.timeStamp.plusMinutes(5).isBefore(OffsetDateTime.now(ZoneId.of("UTC"))))
+                  getAndUpdate(pair)
+                else rate.asRight[Error].pure[F]
+              )
+          }
+          .value,
+    )
+
+  private def getAndUpdate(pair: Rate.Pair)(implicit cache: Map[String, Rate]) =
+    EitherT(getFromOneFrame(pair)).semiflatTap { rate =>
+      redis.put(RedisKey, cache.updated(pair.toKey, rate), Expiration)
+    }.value
+
+  private def getFromOneFrame(pair: Rate.Pair): F[Error Either Rate] =
     basicRequest
-      .get(Uri(config.uri).withParams("pair" -> s"${pair.from.entryName}${pair.to.entryName}"))
+      .get(Uri(config.uri).withParams("pair" -> pair.toKey))
       .headers(Map("token" -> config.token))
       .readTimeout(10.seconds)
       .response(asJson[List[Json]])
@@ -32,26 +75,28 @@ class OneFrame[F[_]: MonadThrow](config: OneFrameConfig)(implicit sttpBackend: S
 
   private def responseDecoder[M[_]: Traverse, A: Decoder](
       response: Response[Either[ResponseException[String, circe.Error], M[Json]]]
-  ): Error Either M[A] =
+    ): Error Either M[A] =
     for {
       body <- response.body.leftMap {
-               case HttpError(body, statusCode) => SttpError(statusCode, body)
-               case DeserializationException(body, error) =>
-                 DeserializationError(
-                   s"DeserializationException: ${error.getMessage}.\nStatus: ${response.statusText}.\n Body $body"
-                 )
-             }
+        case HttpError(body, statusCode) => SttpError(statusCode, body)
+        case DeserializationException(body, error) =>
+          DeserializationError(
+            s"DeserializationException: ${error.getMessage}.\nStatus: ${response.statusText}.\n Body $body"
+          )
+      }
       result <- body
-                 .traverse(_.as[A])
-                 .leftMap { parsingError =>
-                   val message =
-                     s"""
-               |Http JSON Parsing Error: ${parsingError.message}
-               |Error reason: ${parsingError.reason}
-               |Raw object: ${body.map(_.spaces2).mkString_("\n")}
-               |""".stripMargin
-                   DecodeError(message)
-                 }
+        .traverse(_.as[A])
+        .leftMap { decodeFailure =>
+          toDecodeError(decodeFailure, body.map(_.spaces2).mkString_("\n"))
+        }
     } yield result
 
+  private def toDecodeError(decodeFailure: DecodingFailure, jsonRaw: String): DecodeError = {
+    val message =
+      s"""
+         |Http JSON Parsing Error: ${decodeFailure.message}
+         |Raw object: $jsonRaw
+         |""".stripMargin
+    DecodeError(message)
+  }
 }
