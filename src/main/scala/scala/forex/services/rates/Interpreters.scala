@@ -1,8 +1,12 @@
 package scala.forex.services.rates
 
-import cats.Applicative
+import cats.MonadThrow
+import sttp.client3.SttpBackend
+
 import interpreters._
+import scala.forex.config.OneFrameConfig
 
 object Interpreters {
-  def dummy[F[_]: Applicative]: Algebra[F] = new OneFrameDummy[F]()
+  def oneFrame[F[_]: MonadThrow](config: OneFrameConfig)(implicit sttpBackend: SttpBackend[F, Any]): Algebra[F] =
+    new OneFrame[F](config)
 }

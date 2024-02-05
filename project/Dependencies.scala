@@ -11,12 +11,14 @@ object Dependencies {
     val pureConfig = "0.17.4"
     val redis4cats = "1.1.1"
     val enumeratum = "1.7.3"
+    val sttp       = "3.7.2"
 
-    val kindProjector  = "0.13.2"
-    val logback        = "1.4.7"
-    val scalaCheck     = "1.17.0"
-    val scalaTest      = "3.2.15"
-    val catsScalaCheck = "0.3.2"
+    val betterMonadicFor = "0.3.1"
+    val kindProjector    = "0.13.2"
+    val logback          = "1.4.7"
+    val scalaCheck       = "1.17.0"
+    val scalaTest        = "3.2.15"
+    val catsScalaCheck   = "0.3.2"
   }
 
   object Libraries {
@@ -27,6 +29,8 @@ object Dependencies {
 
     private def redis4cats(artifact: String): ModuleID =
       "dev.profunktor" %% artifact % Versions.redis4cats
+    private def sttp(artifact: String): ModuleID =
+      "com.softwaremill.sttp.client3" %% artifact % Versions.sttp
 
     lazy val cats       = "org.typelevel" %% "cats-core"   % Versions.cats
     lazy val catsEffect = "org.typelevel" %% "cats-effect" % Versions.catsEffect
@@ -45,9 +49,11 @@ object Dependencies {
     lazy val enumeratumCirce: ModuleID  = enumeratum("enumeratum-circe")
     lazy val enumeratumCats: ModuleID   = enumeratum("enumeratum-cats")
     lazy val pureConfig                 = "com.github.pureconfig" %% "pureconfig" % Versions.pureConfig
-
+    lazy val sttpCirce: ModuleID        = sttp("circe")
+    lazy val sttpFs2Backend: ModuleID   = sttp("async-http-client-backend-fs2")
     // Compiler plugins
-    lazy val kindProjector = "org.typelevel" %% "kind-projector" % Versions.kindProjector cross CrossVersion.full
+    lazy val kindProjector    = "org.typelevel" %% "kind-projector"     % Versions.kindProjector cross CrossVersion.full
+    lazy val betterMonadicFor = "com.olegpy"    %% "better-monadic-for" % Versions.betterMonadicFor
 
     // Runtime
     lazy val logback = "ch.qos.logback" % "logback-classic" % Versions.logback

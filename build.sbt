@@ -1,4 +1,4 @@
-import Dependencies._
+import Dependencies.*
 
 name := "paidy-forex"
 version := "1.0.1"
@@ -52,6 +52,7 @@ resolvers +=
 
 libraryDependencies ++= Seq(
   compilerPlugin(Libraries.kindProjector),
+  compilerPlugin(Libraries.betterMonadicFor),
   Libraries.cats,
   Libraries.catsEffect,
   Libraries.fs2,
@@ -69,6 +70,8 @@ libraryDependencies ++= Seq(
   Libraries.enumeratumCats,
   Libraries.enumeratumCirce,
   Libraries.enumeratumCore,
+  Libraries.sttpCirce,
+  Libraries.sttpFs2Backend,
   Libraries.scalaTest      % Test,
   Libraries.scalaCheck     % Test,
   Libraries.catsScalaCheck % Test

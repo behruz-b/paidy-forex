@@ -12,7 +12,7 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.server.Router
 
 class RatesHttpRoutes[F[_]: MonadThrow](rates: RatesProgram[F]) extends Http4sDsl[F] {
-  import Converters._, QueryParams._
+  import QueryParams._
 
   private[http] val prefixPath = "/rates"
 
@@ -20,7 +20,7 @@ class RatesHttpRoutes[F[_]: MonadThrow](rates: RatesProgram[F]) extends Http4sDs
     case GET -> Root :? FromQueryParam(from) +& ToQueryParam(to) =>
       EitherT(rates.get(RatesProgramProtocol.GetRatesRequest(from, to))).rethrowT
         .flatMap { rate =>
-          Ok(rate.asGetApiResponse)
+          Ok(rate)
         }
   }
 

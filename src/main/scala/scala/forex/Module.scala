@@ -4,15 +4,16 @@ import cats.effect.Temporal
 import org.http4s._
 import org.http4s.implicits._
 import org.http4s.server.middleware.{ AutoSlash, Timeout }
+import sttp.client3.SttpBackend
 
 import scala.forex.config.ApplicationConfig
 import scala.forex.http.rates.RatesHttpRoutes
 import scala.forex.programs._
 import scala.forex.services._
 
-class Module[F[_]: Temporal](config: ApplicationConfig) {
+class Module[F[_]: Temporal](config: ApplicationConfig)(implicit sttpBackend: SttpBackend[F, Any]) {
 
-  private val ratesService: RatesService[F] = RatesServices.dummy[F]
+  private val ratesService: RatesService[F] = RatesServices.oneFrame[F](config.oneFrame)
 
   private val ratesProgram: RatesProgram[F] = RatesProgram[F](ratesService)
 
