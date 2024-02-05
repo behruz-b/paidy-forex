@@ -31,6 +31,7 @@ scalacOptions ++= Seq(
   "-Xlint:type-parameter-shadow", // A local type parameter shadows a type already in scope.
   "-Xlog-reflective-calls", // Print a message when a reflective method call is generated
   "-Ywarn-dead-code", // Warn when dead code is identified.
+  "-Ymacro-annotations",
   "-Ywarn-value-discard", // Warn when non-Unit expression results are unused.
   "-Xlint:constant", // Evaluation of a constant arithmetic expression results in an error.
   "-Ywarn-extra-implicit", // Warn when more than one implicit parameter section is defined.
@@ -63,6 +64,11 @@ libraryDependencies ++= Seq(
   Libraries.circeParser,
   Libraries.pureConfig,
   Libraries.logback,
+  Libraries.redisCatsEffects,
+  Libraries.redisLog4cats,
+  Libraries.enumeratumCats,
+  Libraries.enumeratumCirce,
+  Libraries.enumeratumCore,
   Libraries.scalaTest      % Test,
   Libraries.scalaCheck     % Test,
   Libraries.catsScalaCheck % Test
